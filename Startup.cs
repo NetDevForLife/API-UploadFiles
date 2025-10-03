@@ -29,16 +29,29 @@ namespace API_UploadFiles
             });
 
             services.AddTransient<IUploadFilesService, UploadFilesService>();
+
+            // Enable CORS for all origins, methods, and headers
+            services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll", builder =>
+                {
+                    builder.AllowAnyOrigin()
+                           .AllowAnyMethod()
+                           .AllowAnyHeader();
+                });
+            });
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsEnvironment("Development"))
-            {
-                app.UseDeveloperExceptionPage();
-                app.UseSwagger();
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "API_UploadFiles v1"));
-            }
+
+            // Always enable Swagger and DeveloperExceptionPage for Codespaces/local dev
+            app.UseDeveloperExceptionPage();
+            app.UseSwagger();
+            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "API_UploadFiles v1"));
+
+            // Enable CORS before routing
+            app.UseCors("AllowAll");
 
             CultureInfo appCulture = new("it-IT");
 
@@ -48,7 +61,8 @@ namespace API_UploadFiles
                 SupportedCultures = new[] { appCulture }
             });
             
-            app.UseHttpsRedirection();
+            // Only use HTTPS redirection if both HTTP and HTTPS are enabled
+            // Commented out to avoid errors when running only on HTTP
             app.UseRouting();
 
             app.UseEndpoints(endpoints =>

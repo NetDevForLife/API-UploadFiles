@@ -26,19 +26,25 @@ namespace API_UploadFiles.Controllers
         [HttpGet("Welcome")]
         public IActionResult Welcome()
         {
-            return Ok(string.Concat("Ciao sono le ore: ", DateTime.Now.ToLongTimeString()));
+            logger.LogInformation("GET /api/Upload/Welcome called at {Time}", DateTime.UtcNow);
+            var message = $"Ciao sono le ore: {DateTime.Now.ToLongTimeString()}";
+            logger.LogInformation("Responding with message: {Message}", message);
+            return Ok(new { message });
         }
 
         [HttpPost("UploadFiles")]
         public async Task<IActionResult> UploadFiles([FromForm] InputUploadFile model)
         {
+            logger.LogInformation("POST /api/Upload/UploadFiles called at {Time}", DateTime.UtcNow);
             try
             {
                 await filesService.UploadFileAsync(model, env);
+                logger.LogInformation("File uploaded successfully at {Time}", DateTime.UtcNow);
                 return Ok();
             }
-            catch
+            catch (Exception ex)
             {
+                logger.LogError(ex, "Error uploading file at {Time}", DateTime.UtcNow);
                 return StatusCode(500);
             }
         }
