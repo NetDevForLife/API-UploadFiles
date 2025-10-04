@@ -6,47 +6,38 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
-namespace API_UploadFiles.Controllers
+namespace API_UploadFiles.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class UploadController(ILogger<UploadController> logger, IUploadFilesService filesService, IWebHostEnvironment env) : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class UploadController : ControllerBase
+    [HttpGet("Welcome")]
+    public IActionResult Welcome()
     {
-        private readonly ILogger<UploadController> logger;
-        private readonly IUploadFilesService filesService;
-        private readonly IWebHostEnvironment env;
+        logger.LogInformation("GET /api/Upload/Welcome called at {Time}", DateTime.UtcNow);
+        var message = $"Ciao sono le ore: {DateTime.Now.ToLongTimeString()}";
+        logger.LogInformation("Responding with message: {Message}", message);
 
-        public UploadController(ILogger<UploadController> logger, IUploadFilesService filesService, IWebHostEnvironment env)
-        {
-            this.logger = logger;
-            this.filesService = filesService;
-            this.env = env;
-        }
-        
-        [HttpGet("Welcome")]
-        public IActionResult Welcome()
-        {
-            logger.LogInformation("GET /api/Upload/Welcome called at {Time}", DateTime.UtcNow);
-            var message = $"Ciao sono le ore: {DateTime.Now.ToLongTimeString()}";
-            logger.LogInformation("Responding with message: {Message}", message);
-            return Ok(new { message });
-        }
+        return Ok(new { message });
+    }
 
-        [HttpPost("UploadFiles")]
-        public async Task<IActionResult> UploadFiles([FromForm] InputUploadFile model)
+    [HttpPost("UploadFiles")]
+    public async Task<IActionResult> UploadFiles([FromForm] InputUploadFile model)
+    {
+        logger.LogInformation("POST /api/Upload/UploadFiles called at {Time}", DateTime.UtcNow);
+
+        try
         {
-            logger.LogInformation("POST /api/Upload/UploadFiles called at {Time}", DateTime.UtcNow);
-            try
-            {
-                await filesService.UploadFileAsync(model, env);
-                logger.LogInformation("File uploaded successfully at {Time}", DateTime.UtcNow);
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Error uploading file at {Time}", DateTime.UtcNow);
-                return StatusCode(500);
-            }
+            await filesService.UploadFileAsync(model, env);
+            logger.LogInformation("File uploaded successfully at {Time}", DateTime.UtcNow);
+
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error uploading file at {Time}", DateTime.UtcNow);
+            return StatusCode(500);
         }
     }
 }
