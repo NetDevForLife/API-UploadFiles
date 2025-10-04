@@ -6,69 +6,62 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 
-namespace API_UploadFiles
+namespace API_UploadFiles;
+
+public class Startup(IConfiguration configuration)
 {
-    public class Startup
+    public IConfiguration Configuration { get; } = configuration;
+
+    public void ConfigureServices(IServiceCollection services)
     {
-        public Startup(IConfiguration configuration)
+        services.AddControllers();
+        services.AddSwaggerGen(c =>
         {
-            Configuration = configuration;
-        }
+            c.SwaggerDoc("v1", new OpenApiInfo { Title = "API_UploadFiles", Version = "v1" });
+        });
 
-        public IConfiguration Configuration { get; }
+        services.AddTransient<IUploadFilesService, UploadFilesService>();
 
-        public void ConfigureServices(IServiceCollection services)
+        // Enable CORS for all origins, methods, and headers
+        services.AddCors(options =>
         {
-            services.AddControllers();
-            services.AddSwaggerGen(c =>
+            options.AddPolicy("AllowAll", builder =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "API_UploadFiles", Version = "v1" });
+                builder.AllowAnyOrigin()
+                       .AllowAnyMethod()
+                       .AllowAnyHeader();
             });
+        });
+    }
 
-            services.AddTransient<IUploadFilesService, UploadFilesService>();
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    {
 
-            // Enable CORS for all origins, methods, and headers
-            services.AddCors(options =>
-            {
-                options.AddPolicy("AllowAll", builder =>
-                {
-                    builder.AllowAnyOrigin()
-                           .AllowAnyMethod()
-                           .AllowAnyHeader();
-                });
-            });
-        }
+        // Always enable Swagger and DeveloperExceptionPage for Codespaces/local dev
+        app.UseDeveloperExceptionPage();
+        app.UseSwagger();
+        app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "API_UploadFiles v1"));
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        // Enable CORS before routing
+        app.UseCors("AllowAll");
+
+        CultureInfo appCulture = new("it-IT");
+
+        app.UseRequestLocalization(new RequestLocalizationOptions
         {
+            DefaultRequestCulture = new RequestCulture(appCulture),
+            SupportedCultures = new[] { appCulture }
+        });
 
-            // Always enable Swagger and DeveloperExceptionPage for Codespaces/local dev
-            app.UseDeveloperExceptionPage();
-            app.UseSwagger();
-            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "API_UploadFiles v1"));
+        // Only use HTTPS redirection if both HTTP and HTTPS are enabled
+        // Commented out to avoid errors when running only on HTTP
+        app.UseRouting();
 
-            // Enable CORS before routing
-            app.UseCors("AllowAll");
-
-            CultureInfo appCulture = new("it-IT");
-
-            app.UseRequestLocalization(new RequestLocalizationOptions
-            {
-                DefaultRequestCulture = new RequestCulture(appCulture),
-                SupportedCultures = new[] { appCulture }
-            });
-            
-            // Only use HTTPS redirection if both HTTP and HTTPS are enabled
-            // Commented out to avoid errors when running only on HTTP
-            app.UseRouting();
-
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-            });
-        }
+        app.UseEndpoints(endpoints =>
+        {
+            endpoints.MapControllers();
+        });
     }
 }
